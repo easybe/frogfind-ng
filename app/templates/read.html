@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>{{ title | e }} - FrogFind! NG</title>
+</head>
+<body>
+<b>[<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" height="20"> FrogFind! NG</a>]</b>
+&nbsp;|&nbsp;
+<a href="/wiki">[Wiki]</a>
+&nbsp;|&nbsp;
+<a href="/reddit">[Reddit]</a>
+&nbsp;|&nbsp;
+<a href="/news">[News]</a>
+&nbsp;|&nbsp;
+<a href="/weather">[Weather]</a>
+&nbsp;|&nbsp;
+<a href="{{ original_url | e }}">[Original]</a>
+&nbsp;|&nbsp;
+<a href="{{ wayback_url | e }}">[Wayback]</a>
+<hr>
+<h1>{{ title | e }}</h1>
+<font size="2"><i>Source: <a href="{{ original_url | e }}">{{ original_url | e }}</a></i></font>
+<hr>
+{{ content | safe }}
+<hr>
+<b>[<a href="/">FrogFind! NG</a>]</b>
+&nbsp;|&nbsp;
+<a href="{{ original_url | e }}">[Original Page]</a>
+</body>
+</html>

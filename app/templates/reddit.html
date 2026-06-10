@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>
+{% if sub_info and sub_info.name != "Search" %}r/{{ sub_info.name | e }}
+{% elif query %}Reddit Search: {{ query | e }}
+{% else %}Reddit Reader
+{% endif %} - FrogFind! NG</title>
+</head>
+<body>
+<center>
+<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" width="160"></a><br>
+<b><font size="6"><a href="/">FrogFind! <i>NG</i></a></font></b>
+&nbsp;&mdash;&nbsp;
+<b><font size="5">Reddit Reader</font></b><br>
+<font size="2"><i>Browse Reddit on vintage hardware</i></font><br>
+<br>
+<form method="get" action="/reddit">
+<input type="text" name="r" value="{{ sub_info.name | e if sub_info and sub_info.name not in ('Search',) else '' }}" size="18" placeholder="subreddit name">
+<input type="submit" value="Go">
+&nbsp;&nbsp;
+<input type="text" name="q" value="{{ query | e }}" size="18" placeholder="search all of Reddit">
+<input type="submit" value="Search">
+</form>
+<br>
+[<a href="/">&#x1F50D; Search</a>]
+&nbsp;|&nbsp;
+[<a href="/wiki">&#x1F4D6; Wiki</a>]
+&nbsp;|&nbsp;
+[<a href="/news">&#x1F4F0; News</a>]
+&nbsp;|&nbsp;
+[<a href="/weather">&#x2601; Weather</a>]
+&nbsp;|&nbsp;
+[<a href="/about">About</a>]
+</center>
+<hr>
+
+{% if error %}
+<center><p><b>{{ error | e }}</b></p></center>
+
+{% elif not sub_info %}
+<b>Popular Subreddits:</b><br><br>
+<table border="0" cellpadding="3" cellspacing="0">
+{% for sub, desc in default_subs %}
+<tr>
+<td><b><a href="/reddit?r={{ sub | urlencode }}">r/{{ sub | e }}</a></b></td>
+<td>&nbsp;&mdash;&nbsp;{{ desc | e }}</td>
+</tr>
+{% endfor %}
+</table>
+{% if not has_oauth %}
+<br>
+<font size="2"><i>
+Note: Running in RSS mode (no Reddit API credentials set).<br>
+Post details and comments require
+<tt>REDDIT_CLIENT_ID</tt> / <tt>REDDIT_CLIENT_SECRET</tt> in .env.
+</i></font>
+{% endif %}
+
+{% else %}
+
+{% if sub_info.name != "Search" %}
+<b><font size="4">r/{{ sub_info.name | e }}</font></b>
+&nbsp;&mdash;&nbsp;
+Sort:
+[<a href="/reddit?r={{ sub_info.name | urlencode }}&sort=hot">Hot</a>]
+[<a href="/reddit?r={{ sub_info.name | urlencode }}&sort=new">New</a>]
+[<a href="/reddit?r={{ sub_info.name | urlencode }}&sort=top">Top</a>]
+[<a href="/reddit?r={{ sub_info.name | urlencode }}&sort=rising">Rising</a>]
+{% if sub_info.mode == "rss" %}&nbsp;<font size="1">(RSS mode)</font>{% endif %}
+{% else %}
+<b>Search results for: &quot;{{ query | e }}&quot;</b>
+{% if sub_info.mode == "rss" %}&nbsp;<font size="1">(RSS mode)</font>{% endif %}
+{% endif %}
+<br><br>
+
+{% if not posts %}
+<center><p>No posts found.</p></center>
+{% else %}
+{% for p in posts %}
+{% if not p.nsfw %}
+<b>
+{% if has_oauth %}
+<a href="/reddit?r={{ p.subreddit | urlencode }}&post={{ p.id | urlencode }}">{{ p.title | e }}</a>
+{% else %}
+<a href="{{ p.permalink | e }}">{{ p.title | e }}</a>
+{% endif %}
+</b>
+{% if p.flair %}&nbsp;<font size="1">[{{ p.flair | e }}]</font>{% endif %}<br>
+<font size="2">
+u/{{ p.author | e }}
+&nbsp;|&nbsp; {{ p.date | e }}
+{% if p.score != "—" %}
+&nbsp;|&nbsp; &#x2B06; {{ p.score | e }}
+{% endif %}
+{% if p.num_comments is not none %}
+&nbsp;|&nbsp; &#x1F4AC; {{ p.num_comments }} comments
+{% endif %}
+{% if p.subreddit and sub_info.name == "Search" %}
+&nbsp;|&nbsp; r/<a href="/reddit?r={{ p.subreddit | urlencode }}">{{ p.subreddit | e }}</a>
+{% endif %}
+{% if not p.is_self and p.url %}
+&nbsp;|&nbsp; [<a href="/read?a={{ p.url | urlencode }}">Read Article</a>]
+{% if p.domain %}&nbsp;<i>({{ p.domain | e }})</i>{% endif %}
+{% endif %}
+{% if not has_oauth %}
+&nbsp;|&nbsp; [<a href="/read?a={{ p.permalink | urlencode }}">Comments</a>]
+{% endif %}
+</font><br><br>
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% endif %}
+
+<hr>
+<center>
+<font size="1">
+FrogFind! NG by <b>Ray Trunk</b> &mdash;
+Content from <a href="/read?a=https://www.reddit.com">Reddit</a>
+{% if has_oauth %}via API{% else %}via RSS{% endif %} &mdash;
+Fork of <a href="/read?a=https://github.com/ActionRetro/FrogFind">FrogFind!</a> (GPL-3.0)
+</font>
+</center>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FrogFind NG — Admin</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: monospace; background: #1a1a1a; color: #c8c8c8; margin: 0; padding: 1rem; }
+  h1 { color: #00ff41; letter-spacing: 4px; margin: 0 0 0.25rem; }
+  .sub { color: #666; font-size: 0.8rem; margin-bottom: 1.5rem; }
+  .nav { margin-bottom: 2rem; }
+  .nav a { color: #00ff41; text-decoration: none; margin-right: 1.5rem; font-size: 0.85rem; }
+  .nav a:hover { text-decoration: underline; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat { border: 1px solid #333; padding: 1rem; }
+  .stat-val { font-size: 2rem; color: #00ff41; font-weight: bold; }
+  .stat-lbl { font-size: 0.75rem; color: #888; margin-top: 0.25rem; letter-spacing: 1px; }
+  .section { border: 1px solid #333; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .section h2 { color: #00ff41; margin: 0 0 1rem; font-size: 0.9rem; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+  .form-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .form-row label { width: 200px; font-size: 0.8rem; color: #aaa; flex-shrink: 0; }
+  input[type=text], input[type=number] { background: #0d0d0d; border: 1px solid #444; color: #c8c8c8; padding: 0.35rem 0.5rem; font-family: monospace; font-size: 0.85rem; width: 180px; }
+  input:focus { outline: none; border-color: #00ff41; }
+  .toggle { display: flex; align-items: center; gap: 0.5rem; }
+  input[type=checkbox] { accent-color: #00ff41; width: 16px; height: 16px; }
+  .btn { background: #00ff41; color: #0d0d0d; border: none; padding: 0.4rem 1rem; font-family: monospace; font-weight: bold; cursor: pointer; font-size: 0.85rem; letter-spacing: 1px; }
+  .btn:hover { background: #00cc33; }
+  .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.75rem; background: #ff4141; color: #fff; }
+  .btn-sm:hover { background: #cc2222; }
+  .tag { display: inline-block; background: #2a2a2a; border: 1px solid #444; padding: 0.15rem 0.5rem; margin: 0.15rem; font-size: 0.75rem; border-radius: 2px; }
+  .ip-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+  .recent li { font-size: 0.8rem; color: #aaa; padding: 0.2rem 0; border-bottom: 1px solid #2a2a2a; }
+  .recent li::before { content: "> "; color: #00ff41; }
+  ul.recent { list-style: none; padding: 0; margin: 0; }
+  .saved { color: #00ff41; font-size: 0.8rem; margin-left: 1rem; }
+  {% if settings.maintenance_mode == "1" %}
+  body::before { content: "⚠ MAINTENANCE MODE ACTIVE"; display: block; background: #ff4141; color: #fff; text-align: center; padding: 0.4rem; margin: -1rem -1rem 1rem; font-size: 0.85rem; letter-spacing: 2px; }
+  {% endif %}
+</style>
+</head>
+<body>
+<h1>// FROGFIND NG //</h1>
+<div class="sub">Admin Panel &mdash; <span style="color:#666">{{ request.client.host }}</span></div>
+
+<div class="nav">
+  <a href="dashboard">Dashboard</a>
+  <a href="logout">Logout</a>
+</div>
+
+<!-- Stats -->
+<div class="grid">
+  <div class="stat">
+    <div class="stat-val">{{ stats.searches_today }}</div>
+    <div class="stat-lbl">SEARCHES TODAY</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">{{ stats.reads_today }}</div>
+    <div class="stat-lbl">READS TODAY</div>
+  </div>
+  <div class="stat">
+    {% set total = stats.cache_hits + stats.cache_misses %}
+    <div class="stat-val">{% if total > 0 %}{{ ((stats.cache_hits / total) * 100) | round(0) | int }}%{% else %}—{% endif %}</div>
+    <div class="stat-lbl">CACHE HIT RATE</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">{{ stats.blocked_ips | length }}</div>
+    <div class="stat-lbl">BLOCKED IPs</div>
+  </div>
+</div>
+
+<!-- Settings -->
+<form method="post" action="settings">
+<div class="section">
+  <h2>SETTINGS</h2>
+
+  <div class="form-row">
+    <label>Maintenance Mode</label>
+    <div class="toggle">
+      <input type="checkbox" name="maintenance_mode" id="mm" {% if settings.maintenance_mode == "1" %}checked{% endif %}>
+      <label for="mm" style="width:auto;color:#c8c8c8;">Enable maintenance page</label>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label>Rate Limit — Search</label>
+    <input type="text" name="rate_limit_search" value="{{ settings.rate_limit_search }}">
+  </div>
+  <div class="form-row">
+    <label>Rate Limit — Read</label>
+    <input type="text" name="rate_limit_read" value="{{ settings.rate_limit_read }}">
+  </div>
+  <div class="form-row">
+    <label>Rate Limit — Image</label>
+    <input type="text" name="rate_limit_image" value="{{ settings.rate_limit_image }}">
+  </div>
+  <div class="form-row">
+    <label>Cache TTL Search (s)</label>
+    <input type="number" name="cache_ttl_search" value="{{ settings.cache_ttl_search }}" min="0">
+  </div>
+  <div class="form-row">
+    <label>Cache TTL Article (s)</label>
+    <input type="number" name="cache_ttl_article" value="{{ settings.cache_ttl_article }}" min="0">
+  </div>
+  <div class="form-row">
+    <label>Max Download Size (bytes)</label>
+    <input type="number" name="max_download_size" value="{{ settings.max_download_size }}" min="0">
+  </div>
+  <div class="form-row">
+    <label>Request Timeout (s)</label>
+    <input type="number" name="request_timeout" value="{{ settings.request_timeout }}" step="0.5" min="1">
+  </div>
+
+  <div style="margin-top:1rem">
+    <button type="submit" class="btn">SAVE SETTINGS</button>
+    {% if request.query_params.get("saved") %}<span class="saved">&#x2713; Saved</span>{% endif %}
+  </div>
+</div>
+</form>
+
+<!-- IP Blocklist -->
+<div class="section">
+  <h2>IP BLOCKLIST</h2>
+  {% if stats.blocked_ips %}
+    {% for ip in stats.blocked_ips %}
+    <div class="ip-row">
+      <span class="tag">{{ ip }}</span>
+      <form method="post" action="unblock-ip" style="display:inline">
+        <input type="hidden" name="ip" value="{{ ip }}">
+        <button type="submit" class="btn btn-sm">unblock</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p style="color:#666;font-size:0.8rem">No blocked IPs.</p>
+  {% endif %}
+  <form method="post" action="block-ip" style="margin-top:0.75rem;display:flex;gap:0.5rem">
+    <input type="text" name="ip" placeholder="1.2.3.4" style="width:160px">
+    <button type="submit" class="btn">BLOCK IP</button>
+  </form>
+</div>
+
+<!-- Recent Searches -->
+<div class="section">
+  <h2>RECENT SEARCHES</h2>
+  {% if stats.recent_searches %}
+  <ul class="recent">
+    {% for q in stats.recent_searches %}
+    <li>{{ q | e }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p style="color:#666;font-size:0.8rem">No searches recorded yet.</p>
+  {% endif %}
+</div>
+
+</body>
+</html>

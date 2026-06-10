@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>
+{% if query %}News: {{ query | e }}
+{% elif category %}News: {{ category | capitalize | e }}
+{% else %}Top Headlines
+{% endif %} - FrogFind! NG</title>
+</head>
+<body>
+<center>
+<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" width="160"></a><br>
+<b><font size="6"><a href="/">FrogFind! <i>NG</i></a></font></b>
+&nbsp;&mdash;&nbsp;
+<b><font size="5">News</font></b><br>
+<font size="2"><i>Google News via RSS</i></font><br>
+<br>
+<form method="get" action="/news">
+<input type="text" name="q" value="{{ query | e if query else '' }}" size="35" placeholder="Search news...">
+<input type="submit" value="Search News">
+</form>
+<br>
+<b>Categories:</b>
+[<a href="/news">Top</a>]
+{% for key in categories %}
+[<a href="/news?cat={{ key }}">{{ key | capitalize }}</a>]
+{% endfor %}
+<br>
+[<a href="/">&#x1F50D; Search</a>]
+&nbsp;|&nbsp;
+[<a href="/wiki">&#x1F4D6; Wiki</a>]
+&nbsp;|&nbsp;
+[<a href="/reddit">&#x1F4AC; Reddit</a>]
+&nbsp;|&nbsp;
+[<a href="/weather">&#x2601; Weather</a>]
+&nbsp;|&nbsp;
+[<a href="/about">About</a>]
+</center>
+<hr>
+
+{% if not items %}
+<center><p>No news found. Try a different keyword or category.</p></center>
+
+{% else %}
+{% if query %}
+<b>News results for: {{ query | e }}</b><br><br>
+{% elif category %}
+<b>Category: {{ category | capitalize | e }}</b><br><br>
+{% else %}
+<b>Top Headlines</b><br><br>
+{% endif %}
+
+{% for item in items %}
+<b><a href="/read?a={{ item.url | urlencode }}">{{ item.title | e }}</a></b><br>
+<font size="2">
+<i>{{ item.source | e }}</i>
+{% if item.date %}&nbsp;&mdash;&nbsp;{{ item.date | e }}{% endif %}
+</font><br>
+{% if item.desc %}<font size="2">{{ item.desc | e }}</font><br>{% endif %}
+<br>
+{% endfor %}
+{% endif %}
+
+<hr>
+<center>
+<font size="1">
+FrogFind! NG by <b>Ray Trunk</b> &mdash;
+News via <a href="/read?a=https://news.google.com">Google News RSS</a> &mdash;
+Fork of <a href="/read?a=https://github.com/ActionRetro/FrogFind">FrogFind!</a> (GPL-3.0)
+</font>
+</center>
+</body>
+</html>

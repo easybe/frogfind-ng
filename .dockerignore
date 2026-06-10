@@ -1,0 +1,15 @@
+.env
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.log
+*.err
+.git
+.gitignore
+.claude
+uvicorn.log
+uvicorn.err
+scripts/
+nginx/certs/
+start_frogfind.py

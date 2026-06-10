@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>{% if post %}{{ post.title | e }}{% else %}Reddit Post{% endif %} - FrogFind! NG</title>
+</head>
+<body>
+<b>[<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" height="20"> FrogFind! NG</a>]</b>
+&nbsp;|&nbsp;
+<a href="/reddit">[Reddit]</a>
+&nbsp;|&nbsp;
+<a href="/reddit?r={{ sub | e }}">[r/{{ sub | e }}]</a>
+{% if post %}
+&nbsp;|&nbsp;
+<a href="{{ post.permalink | e }}">[Original on Reddit]</a>
+{% endif %}
+<hr>
+
+{% if not post %}
+<p>Post not found.</p>
+{% else %}
+
+<h2>{{ post.title | e }}</h2>
+<font size="2">
+&#x2B06; {{ post.score | e }}
+&nbsp;|&nbsp; &#x1F4AC; {{ post.num_comments }} comments
+&nbsp;|&nbsp; Posted by <b>u/{{ post.author | e }}</b>
+&nbsp;|&nbsp; r/<a href="/reddit?r={{ post.subreddit | urlencode }}">{{ post.subreddit | e }}</a>
+&nbsp;|&nbsp; {{ post.date | e }}
+{% if post.flair %}&nbsp;|&nbsp; [{{ post.flair | e }}]{% endif %}
+</font>
+<hr>
+
+{% if post.is_self and post.selftext %}
+{{ post.selftext | safe }}
+{% elif not post.is_self and post.url %}
+<p>
+<b>Link:</b>&nbsp;
+<a href="/read?a={{ post.url | urlencode }}">{{ post.url | e }}</a>
+{% if post.domain %}&nbsp;<font size="2">(<i>{{ post.domain | e }}</i>)</font>{% endif %}
+</p>
+{% endif %}
+
+<hr>
+<b><font size="3">Comments ({{ post.num_comments }})</font></b><br><br>
+
+{% if not comments %}
+<p><i>No comments yet.</i></p>
+{% else %}
+
+{% macro render_comment(c, depth) %}
+<b>u/{{ c.author | e }}</b>
+&nbsp;<font size="2">&#x2B06; {{ c.score | e }}
+&nbsp;|&nbsp; {{ c.date | e }}</font><br>
+{{ c.body | safe }}
+{% if c.replies %}
+<blockquote>
+{% for reply in c.replies %}
+{{ render_comment(reply, depth + 1) }}
+{% endfor %}
+</blockquote>
+{% endif %}
+<hr>
+{% endmacro %}
+
+{% for c in comments %}
+{{ render_comment(c, 0) }}
+{% endfor %}
+
+{% endif %}
+
+{% endif %}
+
+<center>
+<font size="1">
+FrogFind! NG by <b>Ray Trunk</b> &mdash;
+Content from <a href="/read?a=https://www.reddit.com">Reddit</a> via API &mdash;
+Fork of <a href="/read?a=https://github.com/ActionRetro/FrogFind">FrogFind!</a> (GPL-3.0)
+</font>
+</center>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frogfind-ng",
+      "runtimeExecutable": ".venv/Scripts/uvicorn",
+      "runtimeArgs": ["app.main:app", "--port", "8765", "--log-level", "warning"],
+      "port": 8765,
+      "env": {
+        "USE_FAKEREDIS": "true"
+      }
+    }
+  ]
+}

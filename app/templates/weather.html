@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>
+{% if location %}Weather: {{ location.full | e }}
+{% elif query %}Weather: {{ query | e }}
+{% else %}Retro Weather
+{% endif %} - FrogFind! NG</title>
+</head>
+<body>
+<center>
+<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" width="160"></a><br>
+<b><font size="6"><a href="/">FrogFind! <i>NG</i></a></font></b>
+&nbsp;&mdash;&nbsp;
+<b><font size="5">Weather</font></b><br>
+<font size="2"><i>Powered by Open-Meteo &amp; OpenStreetMap</i></font><br>
+<br>
+<form method="get" action="/weather">
+<input type="text" name="q" value="{{ query | e }}" size="30" placeholder="Enter city name...">
+<input type="submit" value="Get Weather">
+</form>
+<br>
+[<a href="/">&#x1F50D; Search</a>]
+&nbsp;|&nbsp;
+[<a href="/wiki">&#x1F4D6; Wiki</a>]
+&nbsp;|&nbsp;
+[<a href="/reddit">&#x1F4AC; Reddit</a>]
+&nbsp;|&nbsp;
+[<a href="/news">&#x1F4F0; News</a>]
+&nbsp;|&nbsp;
+[<a href="/about">About</a>]
+</center>
+<hr>
+
+{% if error %}
+<center>
+<p><b>Error:</b> {{ error | e }}</p>
+<p>Try a different city name.</p>
+</center>
+
+{% elif not location %}
+<center>
+<p>Enter a city name above to get the current weather and 7-day forecast.</p>
+<p><font size="2">
+Examples:
+[<a href="/weather?q=Berlin">Berlin</a>]
+[<a href="/weather?q=New+York">New York</a>]
+[<a href="/weather?q=Tokyo">Tokyo</a>]
+[<a href="/weather?q=London">London</a>]
+[<a href="/weather?q=Sydney">Sydney</a>]
+</font></p>
+<hr>
+<pre>
+    RETRO WEATHER STATION
+    =====================
+       \  |  /
+        --O--          Clear Sky
+       /  |  \
+
+        .----.
+      (  ----  )       Partly Cloudy
+       //  //
+
+        .----.
+      ( ##### )        Thunderstorm
+       /\  /\
+
+     ============
+     ============      Fog
+     ============
+</pre>
+</center>
+
+{% else %}
+<center>
+<b><font size="5">{{ location.full | e }}</font></b><br>
+<font size="2">Lat: {{ "%.4f"|format(location.lat) }} / Lon: {{ "%.4f"|format(location.lon) }}</font>
+{% if weather.timezone %}&nbsp;&mdash;&nbsp;<font size="2">{{ weather.timezone | e }}</font>{% endif %}
+</center>
+<br>
+
+<table border="1" cellpadding="6" cellspacing="0" width="100%">
+<tr>
+<td valign="top" width="200">
+<b><font size="3">Current Conditions</font></b><br>
+<hr>
+<pre>{{ weather.art[0] }}
+{{ weather.art[1] }}
+{{ weather.art[2] }}
+{{ weather.art[3] }}</pre>
+<center><b>{{ weather.desc | e }}</b></center>
+</td>
+<td valign="top">
+<b><font size="3">Right Now</font></b><br>
+<hr>
+<table border="0" cellpadding="3" cellspacing="0">
+<tr>
+<td><b>Temperature:</b></td>
+<td><font size="4"><b>{{ weather.temp_c }}&deg;C</b></font>
+&nbsp;/&nbsp;{{ weather.temp_f }}&deg;F</td>
+</tr>
+<tr>
+<td><b>Feels Like:</b></td>
+<td>{{ weather.feels_c }}&deg;C
+&nbsp;/&nbsp;{{ weather.feels_f }}&deg;F</td>
+</tr>
+<tr>
+<td><b>Humidity:</b></td>
+<td>{{ weather.humidity }}%</td>
+</tr>
+<tr>
+<td><b>Wind:</b></td>
+<td>{{ weather.wind_kmh }} km/h ({{ weather.wind_mph }} mph) {{ weather.wind_dir | e }}</td>
+</tr>
+<tr>
+<td><b>Precipitation:</b></td>
+<td>{{ weather.precip_mm }} mm</td>
+</tr>
+<tr>
+<td><b>UV Index:</b></td>
+<td>{{ weather.uv }} &mdash; {{ weather.uv_label | e }}</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+
+<br>
+<b><font size="4">7-Day Forecast</font></b>
+<hr>
+<table border="1" cellpadding="5" cellspacing="0" width="100%">
+<tr>
+<th align="left">Day</th>
+<th align="left">Condition</th>
+<th align="center">Max</th>
+<th align="center">Min</th>
+</tr>
+{% for day in weather.forecast %}
+<tr>
+<td><b>{{ day.day | e }}</b></td>
+<td>
+<pre style="margin:0; display:inline;">{{ day.art[0] }}
+{{ day.art[1] }}
+{{ day.art[2] }}</pre>&nbsp;{{ day.desc | e }}</td>
+<td align="center"><b>{{ day.max_c }}&deg;C</b><br><font size="2">{{ day.max_f }}&deg;F</font></td>
+<td align="center">{{ day.min_c }}&deg;C<br><font size="2">{{ day.min_f }}&deg;F</font></td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<center>
+<font size="2">
+<a href="/weather?q={{ query | urlencode }}">[Refresh]</a>
+&nbsp;|&nbsp;
+Data: <a href="/read?a=https://open-meteo.com">Open-Meteo</a>
+&nbsp;&mdash;&nbsp;
+Geocoding: <a href="/read?a=https://nominatim.openstreetmap.org">Nominatim/OSM</a>
+</font>
+</center>
+{% endif %}
+
+<hr>
+<center>
+<font size="1">
+FrogFind! NG by <b>Ray Trunk</b> &mdash;
+Weather via <a href="/read?a=https://open-meteo.com">Open-Meteo</a> (no API key required) &mdash;
+Fork of <a href="/read?a=https://github.com/ActionRetro/FrogFind">FrogFind!</a> (GPL-3.0)
+</font>
+</center>
+</body>
+</html>

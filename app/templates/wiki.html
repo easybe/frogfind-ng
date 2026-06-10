@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<html>
+<head>
+<title>
+{% if data and data.summary %}{{ data.summary.title | e }} - Wikipedia
+{% elif query %}Wiki: {{ query | e }}
+{% else %}Wikipedia Lookup
+{% endif %} - FrogFind! NG</title>
+</head>
+<body>
+<center>
+<a href="/"><img src="/logo.jpg" alt="FrogFind! NG" border="0" width="160"></a><br>
+<b><font size="6"><a href="/">FrogFind! <i>NG</i></a></font></b>
+&nbsp;&mdash;&nbsp;
+<b><font size="5">Wikipedia</font></b><br>
+<font size="2"><i>Quick encyclopedia lookup</i></font><br>
+<br>
+<form method="get" action="/wiki">
+<input type="text" name="q" value="{{ query | e }}" size="35" placeholder="Search Wikipedia...">
+<input type="submit" value="Look Up">
+</form>
+<br>
+[<a href="/">&#x1F50D; Web Search</a>]
+&nbsp;|&nbsp;
+[<a href="/reddit">&#x1F4AC; Reddit</a>]
+&nbsp;|&nbsp;
+[<a href="/news">&#x1F4F0; News</a>]
+&nbsp;|&nbsp;
+[<a href="/weather">&#x2601; Weather</a>]
+&nbsp;|&nbsp;
+[<a href="/about">About</a>]
+</center>
+<hr>
+
+{% if error %}
+<center><p><b>{{ error | e }}</b></p></center>
+
+{% elif not data %}
+<center>
+<p>Enter a topic above to look it up on Wikipedia.</p>
+<p><font size="2">
+Examples:
+[<a href="/wiki?q=Commodore+64">Commodore 64</a>]
+[<a href="/wiki?q=Linux">Linux</a>]
+[<a href="/wiki?q=Internet">Internet</a>]
+[<a href="/wiki?q=Alan+Turing">Alan Turing</a>]
+[<a href="/wiki?q=Moon+landing">Moon landing</a>]
+</font></p>
+</center>
+
+{% else %}
+
+{% if data.summary %}
+{% set s = data.summary %}
+<table border="0" cellpadding="6" cellspacing="0" width="100%">
+<tr>
+<td valign="top">
+<h2>{{ s.title | e }}</h2>
+{% if s.description %}<i>{{ s.description | e }}</i><br><br>{% endif %}
+<p>{{ s.extract | e }}</p>
+<font size="2">
+[<a href="/read?a={{ s.page_url | urlencode }}">Read full article</a>]
+&nbsp;|&nbsp;
+[<a href="{{ s.page_url | e }}">Wikipedia.org</a>]
+</font>
+</td>
+{% if s.thumb_url %}
+<td valign="top" width="160" align="center">
+<img src="/image?url={{ s.thumb_url | urlencode }}" alt="{{ s.title | e }}" border="1" width="150"><br>
+<font size="1">Image: Wikipedia</font>
+</td>
+{% endif %}
+</tr>
+</table>
+{% endif %}
+
+{% if data.results %}
+<hr>
+<b>Other results for &quot;{{ query | e }}&quot;:</b><br><br>
+{% for r in data.results %}
+<b><a href="/wiki?q={{ r.title | urlencode }}">{{ r.title | e }}</a></b><br>
+{% if r.snippet %}<font size="2">{{ r.snippet | e }}</font><br>{% endif %}
+<br>
+{% endfor %}
+{% endif %}
+
+{% endif %}
+
+<hr>
+<center>
+<font size="1">
+FrogFind! NG by <b>Ray Trunk</b> &mdash;
+Encyclopedia data from <a href="/read?a=https://en.wikipedia.org">Wikipedia</a>
+(CC BY-SA 3.0) &mdash;
+Fork of <a href="/read?a=https://github.com/ActionRetro/FrogFind">FrogFind!</a> (GPL-3.0)
+</font>
+</center>
+</body>
+</html>
