@@ -86,6 +86,43 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# STEP 1b — Detect container environment (LXC/OpenVZ) & fix Docker storage
+# ─────────────────────────────────────────────────────────────────────────────
+fix_docker_lxc() {
+    # Check if we're inside an LXC or OpenVZ container
+    local virt=""
+    command -v systemd-detect-virt >/dev/null 2>&1 && virt=$(systemd-detect-virt 2>/dev/null || echo "")
+    [[ -f /proc/1/environ ]] && grep -qa "container=lxc" /proc/1/environ 2>/dev/null && virt="lxc"
+    [[ -f /.dockerenv ]] && virt="docker"
+
+    if [[ "$virt" == "lxc" || "$virt" == "openvz" ]]; then
+        warn "LXC/OpenVZ container detected — overlay2 not supported."
+        info "Installing fuse-overlayfs and configuring Docker storage driver..."
+
+        case "$PKG_MGR" in
+            apt)    $SUDO apt-get install -y --no-install-recommends fuse-overlayfs ;;
+            dnf|yum) $SUDO "$PKG_MGR" install -y fuse-overlayfs ;;
+            pacman) $SUDO pacman -Sy --noconfirm fuse-overlayfs ;;
+            *)      warn "Cannot auto-install fuse-overlayfs — falling back to vfs driver." ;;
+        esac
+
+        local driver="vfs"
+        command -v fuse-overlayfs >/dev/null 2>&1 && driver="fuse-overlayfs"
+
+        $SUDO mkdir -p /etc/docker
+        # Only write if not already set
+        if ! grep -q "storage-driver" /etc/docker/daemon.json 2>/dev/null; then
+            echo "{\"storage-driver\": \"${driver}\"}" | $SUDO tee /etc/docker/daemon.json > /dev/null
+            $SUDO systemctl restart docker
+            log "Docker storage driver set to '${driver}' for LXC environment."
+        fi
+    fi
+}
+
+# Run LXC fix before Docker install step
+fix_docker_lxc
+
+# ─────────────────────────────────────────────────────────────────────────────
 # STEP 2 — Install system dependencies
 # ─────────────────────────────────────────────────────────────────────────────
 header "Step 2: Installing system dependencies"
