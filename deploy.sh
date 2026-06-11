@@ -89,33 +89,77 @@ fi
 # STEP 1b — Detect container environment (LXC/OpenVZ) & fix Docker storage
 # ─────────────────────────────────────────────────────────────────────────────
 fix_docker_lxc() {
-    # Check if we're inside an LXC or OpenVZ container
+    # Detect container environment (LXC / OpenVZ / KVM / bare-metal)
     local virt=""
     command -v systemd-detect-virt >/dev/null 2>&1 && virt=$(systemd-detect-virt 2>/dev/null || echo "")
     [[ -f /proc/1/environ ]] && grep -qa "container=lxc" /proc/1/environ 2>/dev/null && virt="lxc"
-    [[ -f /.dockerenv ]] && virt="docker"
 
+    local need_fuse=false
     if [[ "$virt" == "lxc" || "$virt" == "openvz" ]]; then
         warn "LXC/OpenVZ container detected — overlay2 not supported."
-        info "Installing fuse-overlayfs and configuring Docker storage driver..."
+        need_fuse=true
+    fi
 
-        case "$PKG_MGR" in
-            apt)    $SUDO apt-get install -y --no-install-recommends fuse-overlayfs ;;
-            dnf|yum) $SUDO "$PKG_MGR" install -y fuse-overlayfs ;;
-            pacman) $SUDO pacman -Sy --noconfirm fuse-overlayfs ;;
-            *)      warn "Cannot auto-install fuse-overlayfs — falling back to vfs driver." ;;
-        esac
+    # Also check if overlay mount actually works (catches undetected LXC)
+    if ! $SUDO mount -t overlay overlay -o lowerdir=/tmp,upperdir=/tmp,workdir=/tmp /tmp \
+            >/dev/null 2>&1; then
+        warn "Overlay filesystem not supported on this kernel — using fuse-overlayfs."
+        need_fuse=true
+    fi
+    # Clean up test mount silently
+    $SUDO umount /tmp 2>/dev/null || true
 
-        local driver="vfs"
-        command -v fuse-overlayfs >/dev/null 2>&1 && driver="fuse-overlayfs"
+    $SUDO mkdir -p /etc/docker
+    local current_driver
+    current_driver=$(python3 -c "import json,sys; \
+        d=json.load(open('/etc/docker/daemon.json')) if __import__('os').path.exists('/etc/docker/daemon.json') else {}; \
+        print(d.get('storage-driver',''))" 2>/dev/null || echo "")
 
-        $SUDO mkdir -p /etc/docker
-        # Only write if not already set
-        if ! grep -q "storage-driver" /etc/docker/daemon.json 2>/dev/null; then
-            echo "{\"storage-driver\": \"${driver}\"}" | $SUDO tee /etc/docker/daemon.json > /dev/null
-            $SUDO systemctl restart docker
-            log "Docker storage driver set to '${driver}' for LXC environment."
+    # Build desired daemon.json config
+    local driver="overlay2"
+    if $need_fuse; then
+        # Install fuse-overlayfs
+        if ! command -v fuse-overlayfs >/dev/null 2>&1; then
+            info "Installing fuse-overlayfs..."
+            case "$PKG_MGR" in
+                apt)     $SUDO apt-get install -y --no-install-recommends fuse-overlayfs ;;
+                dnf|yum) $SUDO "$PKG_MGR" install -y fuse-overlayfs ;;
+                pacman)  $SUDO pacman -Sy --noconfirm fuse-overlayfs ;;
+                *)       warn "Cannot auto-install fuse-overlayfs — falling back to vfs." ;;
+            esac
         fi
+        command -v fuse-overlayfs >/dev/null 2>&1 && driver="fuse-overlayfs" || driver="vfs"
+    fi
+
+    # Always ensure DNS is set for Docker containers (prevents apt-get failures in LXC)
+    local needs_restart=false
+    local daemon_json="{}"
+    [[ -f /etc/docker/daemon.json ]] && daemon_json=$(cat /etc/docker/daemon.json)
+
+    local new_config
+    new_config=$(python3 -c "
+import json, sys
+d = json.loads('''${daemon_json}''')
+changed = False
+if d.get('storage-driver') != '${driver}':
+    d['storage-driver'] = '${driver}'
+    changed = True
+if '8.8.8.8' not in d.get('dns', []):
+    d['dns'] = ['8.8.8.8', '1.1.1.1']
+    changed = True
+print(json.dumps(d, indent=2))
+print('CHANGED=' + str(changed), file=sys.stderr)
+" 2>/tmp/docker_cfg_status)
+    grep -q "CHANGED=True" /tmp/docker_cfg_status && needs_restart=true
+
+    if $needs_restart; then
+        echo "$new_config" | $SUDO tee /etc/docker/daemon.json > /dev/null
+        info "Docker daemon.json updated (driver=${driver}, dns=8.8.8.8/1.1.1.1)"
+        $SUDO systemctl restart docker
+        sleep 2
+        log "Docker restarted with new configuration."
+    else
+        log "Docker daemon.json already up to date (driver=${current_driver})."
     fi
 }
 
